@@ -122,7 +122,7 @@ export function collectAllIds(node: DomNode): string[] {
 }
 
 // src/utils/domParser.ts  (add this function)
-
+//Simple recursive search — walk the tree, check each node, recurse into children if not found.
 export function findNodeById(root: DomNode, id: string): DomNode | null {
   if (root.id === id) return root;
   for (const child of root.children) {
@@ -130,4 +130,70 @@ export function findNodeById(root: DomNode, id: string): DomNode | null {
     if (found) return found;
   }
   return null;
+}
+
+// src/utils/domParser.ts  (add to existing file)
+
+export type ParseResult =
+  | { success: true; tree: DomNode }
+  | { success: false; error: string };
+
+/**
+ * Converts a raw HTML string (e.g. pasted by the user) into our
+ * DomNode tree. Uses the browser's built-in DOMParser to turn the
+ * string into real DOM elements first, then reuses parseElement —
+ * the same function that would handle a live page — to do the
+ * actual conversion. This is the ONLY new "touches the real DOM
+ * API" boundary in Sprint 2; everything after this stays inside
+ * our own DomNode world.
+ */
+// src/utils/domParser.ts — updated parseHtmlString
+export function parseHtmlString(html: string): ParseResult {
+  const trimmed = html.trim();
+
+  if (!trimmed) {
+    return { success: false, error: 'Please paste some HTML first.' };
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(trimmed, 'text/html');
+
+  const parserError = doc.querySelector('parsererror');
+  if (parserError) {
+    return { success: false, error: 'Couldn\'t parse this as HTML. Check for unclosed tags and try again.' };
+  }
+
+  // If the user's input itself contains an <html> tag, they pasted a
+  // full document — respect that, and use the REAL root (<html>),
+  // preserving <head> and <body> exactly as authored.
+  const isFullDocument = /<html[\s>]/i.test(trimmed);
+
+  if (isFullDocument) {
+    return { success: true, tree: parseElement(doc.documentElement) };
+  }
+
+  // Otherwise, this is a fragment/snippet paste — fall back to our
+  // existing body-based logic.
+  const rootElement = doc.body.children.length > 0 ? doc.body : null;
+
+  if (!rootElement || rootElement.children.length === 0) {
+    return { success: false, error: 'No valid HTML elements found in the input.' };
+  }
+
+  if (rootElement.children.length === 1) {
+    return { success: true, tree: parseElement(rootElement.children[0]) };
+  }
+
+  const wrappedChildren = Array.from(rootElement.children).map((el) => parseElement(el, 1));
+
+  return {
+    success: true,
+    tree: {
+      id: 'parsed-root',
+      tagName: '#fragment',
+      attributes: {},
+      children: wrappedChildren,
+      depth: 0,
+    },
+  };
 }

@@ -1,4 +1,4 @@
-// src/components/inspector/Inspector.tsx
+// src/components/inspector/Inspector.tsx  (updated)
 import { useSelectedNode } from '../../context/SelectedNodeContext';
 import { findNodeById } from '../../utils/domParser';
 import { InspectorField } from './InspectorField';
@@ -22,13 +22,26 @@ export function Inspector({ rootNode }: InspectorProps) {
   const node = findNodeById(rootNode, selectedNodeId);
 
   if (!node) {
-    // Defensive case — shouldn't happen in practice, but a selected id
-    // that no longer matches any node in the tree is a real possibility
-    // once we support live/changing data in a later sprint.
     return (
       <p className="font-sans text-sm text-muted">
         Selected node not found.
       </p>
+    );
+  }
+
+  if (node.tagName === '#fragment') {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="font-sans text-sm text-text">
+          This isn't a real HTML tag.
+        </p>
+        <p className="font-sans text-sm text-muted">
+          Your pasted HTML had {node.children.length} separate top-level
+          elements with no single shared parent, so DOMLab grouped them
+          under this placeholder to display them as one tree. Select one
+          of its child nodes below to inspect real HTML.
+        </p>
+      </div>
     );
   }
 
