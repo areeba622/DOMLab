@@ -1,15 +1,33 @@
 // src/pages/LandingPage.tsx
-import { useState, useEffect, useRef, useCallback } from 'react';
+//
+// ═══════════════════════════════════════════════════════════════════
+// FILE MAP (search these header comments to jump around quickly)
+// ═══════════════════════════════════════════════════════════════════
+//   1. DESIGN TOKENS (dark P / light L)
+//   2. SAMPLE DATA (static HTML text + matching DomNode tree)
+//   3. HOOKS  (useDebounce, useTypewriter, useInView)
+//   4. SMALL PIECES  (TypewriterCursor, NeoButton, FloatingChip)
+//   5. BRACKET MASCOT
+//   6. PATH PILLS  (Learning Path — currently commented out below)
+//   7. HOW IT WORKS CARD DATA  (includes new "Coming Soon" badge)
+//   8. LIVE DEMO SECTION  (now READ-ONLY, sample data only, glass panel)
+//   9. MAIN LandingPage COMPONENT (Navbar, Hero, sections, Footer)
+// ═══════════════════════════════════════════════════════════════════
+
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useAnimation } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { DomTree } from '../components/dom-tree/DomTree';
-import { parseHtmlString } from '../utils/domParser';
-import { getSampleDomTree } from '../utils/domParser';
+import { getSampleDomTree, findNodeById } from '../utils/domParser';
 import { useSelectedNode } from '../context/SelectedNodeContext';
 import type { DomNode } from '../types/dom.types';
 
-// ── Design tokens — dark mode ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// 1. DESIGN TOKENS
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Dark mode ──
 const P = {
   bg:       '#1B1F27',
   panel:    '#242A35',
@@ -23,9 +41,10 @@ const P = {
   navy:     '#0d0d14',
 };
 
-// ── Design tokens — light mode ────────────────────────────────────
-// Every component reads from `colors` (derived below from theme),
-// never directly from P or L — this is what makes the toggle work.
+// ── Light mode ──
+// Every component below reads from `colors` (derived from theme in
+// the main component), never directly from P or L — that's what
+// makes the light/dark toggle actually work across the whole page.
 const L = {
   bg:       '#cbcbbd',
   panel:    '#ffff',
@@ -34,39 +53,29 @@ const L = {
   steelLt:  '#4C7EA8',
   cream:    '#1B1E27',
   muted:    '#383e46',
-  mutedDim: '#9AA3B5',
-  border:   '#DCE0E6',
+  mutedDim: '#2d2f33',
+  border:   '#565553',
   navy:     '#FFFFFF',
 };
 
-// ── DEFAULT DEMO HTML ─────────────────────────────────────────────
-const DEFAULT_DEMO_HTML = `<div class="app">
-  <nav class="navbar">
-    <a href="/">Home</a>
-  </nav>
-  <main>
-    <h1>Hello, DOM!</h1>
-    <p class="body-text">
-      Exploring the tree...
-    </p>
-  </main>
-</div>`;
+// ═══════════════════════════════════════════════════════════════════
+// 2. SAMPLE DATA
+//    The Live Demo section is READ-ONLY and always shows this exact
+//    sample tree — it is NOT editable and does NOT call
+//    parseHtmlString anymore. This text and the DomNode tree from
+//    getSampleDomTree() describe the SAME structure on purpose, so
+//    what the visitor reads on the left visually matches the tree
+//    on the right.
+// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// 3. HOOKS
+// ═══════════════════════════════════════════════════════════════════
 
-// ── useDebounce ───────────────────────────────────────────────────
-// Delays updating `value` until the user has stopped typing for
-// `delayMs` ms — prevents re-parsing on every single keystroke.
-function useDebounce<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(t);
-  }, [value, delayMs]);
-  return debounced;
-}
-
-// ── useTypewriter ─────────────────────────────────────────────────
+// ── useTypewriter ──────────────────────────────────────────────────
 // Reveals `fullText` one character at a time once `enabled` is true.
 // Respects prefers-reduced-motion — reveals instantly for those users.
+// Used by: Hero headline, "Code meets tree" heading, "THREE STEPS TO
+// CLARITY" heading, "READY TO SEE THE DOM?" heading.
 function useTypewriter(
   fullText: string,
   speedMs: number,
@@ -108,10 +117,11 @@ function useTypewriter(
 }
 
 // ── useInView ─────────────────────────────────────────────────────
-// Returns true once the element has entered the viewport.
-// Used to trigger typewriter effects for below-fold headings.
-function useInView(threshold = 0.3): [React.RefObject<HTMLDivElement>, boolean] {
-  const ref = useRef<HTMLDivElement>(null);
+// Returns true once the element has scrolled into the viewport.
+// Used to trigger typewriter effects for below-fold headings so they
+// don't all type out immediately on page load.
+function useInView(threshold = 0.3): [React.RefObject<HTMLDivElement | null>, boolean] {
+  const ref = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
 
   useEffect(() => {
@@ -128,7 +138,12 @@ function useInView(threshold = 0.3): [React.RefObject<HTMLDivElement>, boolean] 
   return [ref, inView];
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// 4. SMALL PIECES
+// ═══════════════════════════════════════════════════════════════════
+
 // ── TypewriterCursor ──────────────────────────────────────────────
+// The blinking bar shown at the end of text while it's still typing.
 function TypewriterCursor({ color }: { color: string }) {
   return (
     <span
@@ -147,6 +162,8 @@ function TypewriterCursor({ color }: { color: string }) {
 }
 
 // ── NeoButton ─────────────────────────────────────────────────────
+// Neobrutalist button: thick black border, hard offset shadow that
+// collapses + button shifts down-right on press (physical feel).
 function NeoButton({
   children, onClick, color, large = false, style = {},
 }: {
@@ -157,7 +174,7 @@ function NeoButton({
   style?: React.CSSProperties;
 }) {
   const [pressed, setPressed] = useState(false);
-  // Text is black on amber, cream on dark backgrounds
+  // Text is black on amber, cream on darker/other backgrounds
   const textColor = color === P.amber || color === L.amber ? '#000' : P.cream;
 
   return (
@@ -194,6 +211,7 @@ function NeoButton({
 }
 
 // ── FloatingChip ──────────────────────────────────────────────────
+// Small floating code-snippet labels that drift around the mascot.
 function FloatingChip({
   text, top, left, right, bottom, rotate, delay, colors,
 }: {
@@ -226,22 +244,21 @@ function FloatingChip({
   );
 }
 
-// ── BracketMascot ─────────────────────────────────────────────────
-// Hand wave fix: animates only the hand piece with a realistic
-// left-right tilt [0, -20, 15, -20, 10, 0] around the wrist joint
-// at the tip of the right bracket arm — instead of spinning the
-// whole arm group around a single origin, which looked like a spin
-// rather than a wave.
+// ═══════════════════════════════════════════════════════════════════
+// 5. BRACKET MASCOT
+//    Waves once on load (hand tilts from the wrist), then settles
+//    into a continuous gentle idle bob.
+// ═══════════════════════════════════════════════════════════════════
 function BracketMascot({ colors }: { colors: typeof P }) {
   const handControls = useAnimation();
   const bodyControls = useAnimation();
 
   useEffect(() => {
     const sequence = async () => {
-      // Wave: hand tilts left-right naturally from the wrist joint
+      // Wave: hand tilts gently around the wrist joint, not a full arm swing.
       await handControls.start({
-        rotate: [0, -20, 15, -20, 10, 0],
-        transition: { duration: 1.6, ease: 'easeInOut' },
+        rotate: [0, -12, 8, -10, 6, 0],
+        transition: { duration: 1.2, ease: 'easeInOut' },
       });
       // Settle into continuous idle bob
       bodyControls.start({
@@ -296,19 +313,12 @@ function BracketMascot({ colors }: { colors: typeof P }) {
           stroke={colors.steel} strokeWidth="14"
           strokeLinecap="round"
         />
-        {/* Waving hand — rotates around the wrist point (185, 55)
-            which is where the arm stub ends, so it looks like a
-            natural wrist-pivot wave rather than a full-arm spin   */}
+        {/* Waving hand — rotates around the wrist point (185, 55) */}
         <motion.g
           animate={handControls}
-          style={{
-            originX: '185px',
-            originY: '55px',
-          }}
+          style={{ transformOrigin: '185px 55px', transformBox: 'fill-box' }}
         >
-          {/* Palm */}
           <ellipse cx="185" cy="40" rx="13" ry="11" fill={colors.steel} />
-          {/* Fingers — three small rounded bumps above the palm */}
           <ellipse cx="176" cy="30" rx="5" ry="7" fill={colors.steelLt} />
           <ellipse cx="185" cy="27" rx="5" ry="7" fill={colors.steelLt} />
           <ellipse cx="194" cy="30" rx="5" ry="7" fill={colors.steelLt} />
@@ -318,63 +328,25 @@ function BracketMascot({ colors }: { colors: typeof P }) {
   );
 }
 
-// ── PathPill ──────────────────────────────────────────────────────
-const PILLS = [
-  { label: 'HTML',       color: '#ea470c', bg: 'rgba(227,111,68,0.1)'  },
-  { label: 'JavaScript', color: P.amber,   bg: 'rgba(232,163,61,0.1)'  },
-  { label: 'Events',     color: P.steelLt, bg: 'rgba(107,158,196,0.1)' },
-  { label: 'React',      color: '#61DAFB', bg: 'rgba(97,218,251,0.09)' },
-];
+// ═══════════════════════════════════════════════════════════════════
+// 6. PATH PILLS  (Learning Path section — currently commented out
+//    further down in the JSX; kept here so it's ready to re-enable)
+// ═══════════════════════════════════════════════════════════════════
 
-function PathPill({ pill, isLast }: { pill: typeof PILLS[0]; isLast: boolean }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <button
-        style={{
-          background: hov
-            ? pill.bg.replace('0.1)', '0.18)').replace('0.09)', '0.16)')
-            : pill.bg,
-          border: `1.5px solid ${hov ? pill.color : pill.color + '55'}`,
-          borderRadius: 999,
-          padding: '14px 30px',
-          fontFamily: 'Archivo Black, sans-serif',
-          fontWeight: 400,
-          fontSize: 15,
-          color: pill.color,
-          cursor: 'pointer',
-          transform: hov ? 'translateY(-4px) scale(1.04)' : '',
-          boxShadow: hov
-            ? `0 10px 28px ${pill.color}30`
-            : `0 4px 14px ${pill.color}1A`,
-          transition: 'transform 0.18s, background 0.18s, border-color 0.18s, box-shadow 0.18s',
-          letterSpacing: '-0.01em',
-        }}
-        onMouseEnter={() => setHov(true)}
-        onMouseLeave={() => setHov(false)}
-      >
-        {pill.label}
-      </button>
-      {!isLast && (
-        <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
-          <path
-            d="M3 8 H19 M14 3 L19 8 L14 13"
-            stroke={P.mutedDim} strokeWidth="1.8"
-            strokeLinecap="round" strokeLinejoin="round"
-          />
-        </svg>
-      )}
-    </div>
-  );
-}
-
-// ── HOW IT WORKS cards ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// 7. HOW IT WORKS CARD DATA
+//    Card index 2 ("Manipulate with JS") now carries a
+//    `comingSoon: true` flag — the card render logic below reads
+//    this flag and overlays a small "COMING SOON" badge in the
+//    corner. Feature not built yet, so we're honest about it here.
+// ═══════════════════════════════════════════════════════════════════
 const HOW_IT_WORKS = [
   {
     step: '01',
     title: 'Paste HTML',
     desc: 'Drop any HTML markup into the editor. DOMLab parses it instantly.',
     color: '#4A90D9',
+    comingSoon: false,
     icon: (
       <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: '1rem' }}>
         &lt;/&gt;
@@ -386,6 +358,7 @@ const HOW_IT_WORKS = [
     title: 'Explore the Tree',
     desc: 'See every node, text content, attribute and relationship in the visual tree.',
     color: '#4CAF72',
+    comingSoon: false,
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <circle cx="10" cy="3" r="2" fill="#000" />
@@ -402,6 +375,8 @@ const HOW_IT_WORKS = [
     title: 'Manipulate with JS',
     desc: 'Run JavaScript directly. Watch every DOM mutation happen in real time.',
     color: '#E84D8A',
+    // ── NEW: this feature (Sprint 4) hasn't been built yet ──
+    comingSoon: true,
     icon: (
       <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: '1rem' }}>
         {'{ }'}
@@ -410,44 +385,178 @@ const HOW_IT_WORKS = [
   },
 ];
 
-// ── LiveDemoSection ───────────────────────────────────────────────
-// Genuine interactive demo: user types HTML into a textarea,
-// parseHtmlString runs after a 300ms debounce pause, and the result
-// drives the real DomTree component — same one used in the Explorer.
-// useDomTree expand state is owned by DomTree itself (unchanged).
+// ═══════════════════════════════════════════════════════════════════
+// 8. LIVE DEMO SECTION
+//    CHANGED: this is now a READ-ONLY showcase of sample data.
+//      - Left panel: static syntax-highlighted HTML text (NOT an
+//        editable textarea — user cannot type here anymore).
+//        Background uses a glassmorphism effect (semi-transparent +
+//        backdrop-blur) instead of a flat panel color.
+//      - Right panel: the real DomTree component, rendering the
+//        real sample tree from getSampleDomTree(). Clicking a node
+//        selects it via the shared SelectedNodeContext (same context
+//        the Explorer uses), and a small "Selected node" info strip
+//        below the tree shows that node's tag/depth/text — this is
+//        the "small info of selected node" the user asked for.
+//      - The typewriter effect on the "Code meets tree, in real
+//        time" heading is UNCHANGED and still runs on scroll-into-view.
+// ═══════════════════════════════════════════════════════════════════
+function formatAttributes(attributes: Record<string, string>) {
+  return Object.entries(attributes)
+    .map(([key, value]) => ` ${key}="${value}"`)
+    .join('');
+}
+
+function renderReadOnlyHtmlNode(
+  node: DomNode,
+  selectedNodeId: string | null,
+  onSelect: (id: string) => void,
+  colors: typeof P,
+  indent = 0,
+): ReactNode[] {
+  if (node.tagName === '#fragment') {
+    return node.children.flatMap((child) =>
+      renderReadOnlyHtmlNode(child, selectedNodeId, onSelect, colors, indent),
+    );
+  }
+
+  const isSelected = node.id === selectedNodeId;
+  const indentPx = indent * 18;
+  const attrs = formatAttributes(node.attributes);
+
+  const lineStyle: React.CSSProperties = {
+    display: 'flex',
+    paddingLeft: indentPx,
+    margin: 0,
+    color: colors.cream,
+    lineHeight: 1.75,
+    cursor: 'pointer',
+    backgroundColor: isSelected ? `${colors.amber}22` : 'transparent',
+    borderRadius: isSelected ? 4 : 0,
+  };
+
+  const result: ReactNode[] = [
+    <div
+      key={`${node.id}-open`}
+      style={lineStyle}
+      onClick={() => onSelect(node.id)}
+    >
+      <span style={{ color: colors.steel }}>{`<${node.tagName}${attrs}>`}</span>
+    </div>,
+  ];
+
+  if (node.textContent) {
+    result.push(
+      <div
+        key={`${node.id}-text`}
+        style={{
+          ...lineStyle,
+          paddingLeft: indentPx + 18,
+        }}
+        onClick={() => onSelect(node.id)}
+      >
+        {node.textContent}
+      </div>,
+    );
+  }
+
+  for (const child of node.children) {
+    result.push(...renderReadOnlyHtmlNode(child, selectedNodeId, onSelect, colors, indent + 1));
+  }
+
+  result.push(
+    <div
+      key={`${node.id}-close`}
+      style={lineStyle}
+      onClick={() => onSelect(node.id)}
+    >
+      <span style={{ color: colors.steel }}>{`</${node.tagName}>`}</span>
+    </div>,
+  );
+
+  return result;
+}
+
+function collectDomNodeIds(node: DomNode): string[] {
+  return [node.id, ...node.children.flatMap(collectDomNodeIds)];
+}
+
+function findDomNodePath(root: DomNode, targetId: string): string[] | null {
+  if (root.id === targetId) return [root.id];
+  for (const child of root.children) {
+    const path = findDomNodePath(child, targetId);
+    if (path) return [root.id, ...path];
+  }
+  return null;
+}
+
+function renderReadOnlyHtmlTree(
+  root: DomNode,
+  selectedNodeId: string | null,
+  onSelect: (id: string) => void,
+  colors: typeof P,
+) {
+  return (
+    <div style={{
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: '0.82rem',
+      whiteSpace: 'pre',
+      color: colors.cream,
+      minHeight: '280px',
+    }}>
+      {renderReadOnlyHtmlNode(root, selectedNodeId, onSelect, colors)}
+    </div>
+  );
+}
+
 function LiveDemoSection({ colors }: { colors: typeof P }) {
-  const [htmlInput, setHtmlInput] = useState(DEFAULT_DEMO_HTML);
-  const debouncedHtml = useDebounce(htmlInput, 300);
-  const [tree, setTree] = useState<DomNode>(() => getSampleDomTree());
-  const [parseError, setParseError] = useState<string | null>(null);
-  const { clearSelection } = useSelectedNode();
+  // Sample tree is fixed — generated once, never re-parsed, since
+  // there is no editable input driving it anymore.
+  const [tree] = useState<DomNode>(() => getSampleDomTree());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(
+    () => new Set(collectDomNodeIds(tree)),
+  );
 
-  // Re-parse whenever the debounced value changes
+  // Reuse the SAME selection context the Explorer uses, so clicking
+  // a node in this landing-page tree behaves identically to the
+  // real app — no separate/duplicate selection state needed here.
+  const { selectedNodeId, selectNode } = useSelectedNode();
+  const selectedNode = selectedNodeId ? findNodeById(tree, selectedNodeId) : null;
+
   useEffect(() => {
-    if (!debouncedHtml.trim()) return;
-    const result = parseHtmlString(debouncedHtml);
-    if (result.success) {
-      setTree(result.tree);
-      setParseError(null);
-      clearSelection();
-    } else {
-      setParseError(result.error);
-    }
-  }, [debouncedHtml, clearSelection]);
+    if (!selectedNodeId) return;
+    const path = findDomNodePath(tree, selectedNodeId);
+    if (!path) return;
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      path.forEach((id) => next.add(id));
+      return next;
+    });
+  }, [selectedNodeId, tree]);
 
-  // Typewriter for the section heading — triggers on scroll into view
+  const handleToggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // ── Typewriter for the section heading (UNCHANGED, kept as-is) ──
   const [headingRef, headingInView] = useInView(0.3);
   const HEADING_TEXT = 'Code meets tree, in real time';
   const typedLength  = useTypewriter(HEADING_TEXT, 40, 200, headingInView);
   const typedHeading = HEADING_TEXT.slice(0, typedLength);
   const headingDone  = typedLength >= HEADING_TEXT.length;
-  // "in real time" starts at character index 17
+  // "in real time" starts at character index 17 — colored differently
   const COLOURED_START = 17;
   const plainPart      = typedHeading.slice(0, COLOURED_START);
   const colouredPart   = typedHeading.slice(COLOURED_START);
 
   return (
     <section id="live-demo" style={{ padding: '80px 48px', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* ── Section heading (typewriter effect preserved) ── */}
       <div ref={headingRef} style={{ textAlign: 'center', marginBottom: '48px' }}>
         <h2 style={{
           fontFamily: 'Archivo Black, sans-serif',
@@ -461,6 +570,14 @@ function LiveDemoSection({ colors }: { colors: typeof P }) {
           <span style={{ color: colors.steel }}>{colouredPart}</span>
           {!headingDone && <TypewriterCursor color={colors.steel} />}
         </h2>
+        <p style={{
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '0.85rem',
+          color: colors.muted,
+          marginTop: 10,
+        }}>
+          Sample data — click any node in the tree to see its details.
+        </p>
       </div>
 
       <div style={{
@@ -469,9 +586,15 @@ function LiveDemoSection({ colors }: { colors: typeof P }) {
         gap: '24px',
         alignItems: 'stretch',
       }}>
-        {/* LEFT: editable textarea with syntax hint */}
+
+        {/* ── LEFT: read-only code panel with glassmorphism background ── */}
         <div style={{
-          backgroundColor: colors.panel,
+          // Glassmorphism: semi-transparent panel color + backdrop-blur
+          // so whatever sits behind this section (page background,
+          // gradient, etc.) softly shows through the panel.
+          backgroundColor: colors.panel , 
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)', // Safari support
           border: '2.5px solid #000',
           boxShadow: '4px 4px 0 #000',
           overflow: 'hidden',
@@ -485,53 +608,36 @@ function LiveDemoSection({ colors }: { colors: typeof P }) {
             gap: '8px',
             padding: '10px 16px',
             borderBottom: '2px solid #000',
-            backgroundColor: colors.bg,
+            backgroundColor: colors.bg + 'CC', // slightly transparent too
             flexShrink: 0,
           }}>
             <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#ff5f57', border: '1px solid #000' }} />
             <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#ffbd2e', border: '1px solid #000' }} />
             <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#28c840', border: '1px solid #000' }} />
             <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem', color: colors.muted, marginLeft: 8 }}>
-              index.html — type to update the tree →
+              index.html — sample data (read-only)
             </span>
           </div>
 
-          {/* Editable textarea */}
-          <textarea
-            value={htmlInput}
-            onChange={(e) => setHtmlInput(e.target.value)}
-            spellCheck={false}
-            style={{
-              flex: 1,
-              resize: 'none',
-              border: 'none',
-              outline: 'none',
-              backgroundColor: 'transparent',
-              padding: '20px 24px',
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: '0.82rem',
-              lineHeight: '1.8',
-              color: colors.cream,
-              minHeight: '280px',
-            }}
-          />
-
-          {/* Error strip — only visible when parse fails */}
-          {parseError && (
-            <div style={{
-              padding: '8px 16px',
-              borderTop: '2px solid #000',
-              backgroundColor: '#E84D8A22',
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: '0.72rem',
-              color: '#E84D8A',
-            }}>
-              ⚠ {parseError}
-            </div>
-          )}
+          {/* Read-only HTML display — rendered from the sample DOM tree.
+              The selected node is visually highlighted here and can be
+              clicked to select the same node in the inspector/tree. */}
+          <div style={{
+            flex: 1,
+            margin: 0,
+            padding: '20px 24px',
+            overflowX: 'auto',
+            overflowY: 'auto',
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: '0.82rem',
+            color: colors.cream,
+            minHeight: '280px',
+          }}>
+            {renderReadOnlyHtmlTree(tree, selectedNodeId, selectNode, colors)}
+          </div>
         </div>
 
-        {/* RIGHT: real DomTree component */}
+        {/* ── RIGHT: real DomTree component + selected node info ── */}
         <div style={{
           backgroundColor: colors.panel,
           border: '2.5px solid #000',
@@ -539,6 +645,8 @@ function LiveDemoSection({ colors }: { colors: typeof P }) {
           padding: '20px 24px',
           overflow: 'auto',
           minHeight: '320px',
+          display: 'flex',
+          flexDirection: 'column',
         }}>
           {/* Panel header */}
           <div style={{
@@ -574,22 +682,83 @@ function LiveDemoSection({ colors }: { colors: typeof P }) {
               backgroundColor: 'rgba(255,255,255,0.04)',
               border: `1px solid ${colors.border}`,
               padding: '2px 8px',
-            }}>live</span>
+            }}>sample</span>
           </div>
 
-          {/* The real DomTree — same component used in /explorer */}
+          {/* The real DomTree — same component used in /explorer.
+              All nodes start expanded (root + its direct children)
+              so visitors see structure immediately without clicking. */}
           <DomTree
             rootNode={tree}
-            expandedIds={new Set([tree.id, ...tree.children.map(c => c.id)])}
-            onToggleExpand={() => {}}
+            expandedIds={expandedIds}
+            onToggleExpand={handleToggleExpand}
           />
+
+          {/* ── NEW: small "Selected node" info strip ──
+              Shows tag / depth / text content of whichever node the
+              visitor clicked in the tree above. Empty state when
+              nothing is selected yet. */}
+          <div style={{
+            marginTop: 16,
+            paddingTop: 14,
+            borderTop: `1px solid ${colors.border}`,
+          }}>
+            {selectedNode ? (
+              <div style={{
+                padding: '10px 14px',
+                backgroundColor: 'rgba(232,163,61,0.07)',
+                border: '1px solid rgba(232,163,61,0.2)',
+              }}>
+                <div style={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 10,
+                  color: colors.muted,
+                  marginBottom: 6,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}>Selected node</div>
+
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>
+                  <span>
+                    <span style={{ color: colors.amber }}>tag</span>
+                    <span style={{ color: colors.muted }}>: </span>
+                    <span style={{ color: '#9DD494' }}>"{selectedNode.tagName}"</span>
+                  </span>
+                  <span>
+                    <span style={{ color: colors.amber }}>depth</span>
+                    <span style={{ color: colors.muted }}>: </span>
+                    <span style={{ color: '#9DD494' }}>{selectedNode.depth}</span>
+                  </span>
+                  {selectedNode.textContent && (
+                    <span>
+                      <span style={{ color: colors.amber }}>text</span>
+                      <span style={{ color: colors.muted }}>: </span>
+                      <span style={{ color: '#9DD494' }}>"{selectedNode.textContent}"</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p style={{
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: 11.5,
+                color: colors.mutedDim,
+                margin: 0,
+                fontStyle: 'italic',
+              }}>
+                Click a node above to see its details here.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-// ── Main LandingPage ──────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// 9. MAIN LANDING PAGE COMPONENT
+// ═══════════════════════════════════════════════════════════════════
 export function LandingPage() {
   const navigate  = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -606,8 +775,8 @@ export function LandingPage() {
   };
 
   // ── HERO headline typewriter ──────────────────────────────────
-  // Font-size note: 'clamp(3rem, 8vw, 6.5rem)' — scales from 48px
-  // on small screens up to 104px on very wide displays.
+  // Font-size note: 'clamp(3rem, 8vw, 4.5rem)' — scales fluidly
+  // between a 48px floor and a 72px ceiling based on viewport width.
   const HERO_TEXT    = 'SEE INSIDE\nTHE BROWSER';
   const heroTyped    = useTypewriter(HERO_TEXT, 45, 700, true);
   const heroSliced   = HERO_TEXT.slice(0, heroTyped);
@@ -616,18 +785,18 @@ export function LandingPage() {
   const stillLine1   = !heroSliced.includes('\n');
 
   // ── "THREE STEPS TO CLARITY" typewriter ──────────────────────
-  const [stepsRef, stepsInView]       = useInView(0.25);
-  const STEPS_TEXT                    = 'THREE STEPS TO CLARITY';
-  const stepsTyped                    = useTypewriter(STEPS_TEXT, 40, 200, stepsInView);
-  const stepsSliced                   = STEPS_TEXT.slice(0, stepsTyped);
-  const stepsDone                     = stepsTyped >= STEPS_TEXT.length;
+  const [stepsRef, stepsInView] = useInView(0.25);
+  const STEPS_TEXT   = 'THREE STEPS TO CLARITY';
+  const stepsTyped   = useTypewriter(STEPS_TEXT, 40, 200, stepsInView);
+  const stepsSliced  = STEPS_TEXT.slice(0, stepsTyped);
+  const stepsDone    = stepsTyped >= STEPS_TEXT.length;
 
   // ── "READY TO SEE THE DOM?" typewriter ───────────────────────
-  const [ctaRef, ctaInView]           = useInView(0.25);
-  const CTA_TEXT                      = 'READY TO SEE THE DOM?';
-  const ctaTyped                      = useTypewriter(CTA_TEXT, 40, 200, ctaInView);
-  const ctaSliced                     = CTA_TEXT.slice(0, ctaTyped);
-  const ctaDone                       = ctaTyped >= CTA_TEXT.length;
+  const [ctaRef, ctaInView] = useInView(0.25);
+  const CTA_TEXT     = 'READY TO SEE THE DOM?';
+  const ctaTyped     = useTypewriter(CTA_TEXT, 40, 200, ctaInView);
+  const ctaSliced    = CTA_TEXT.slice(0, ctaTyped);
+  const ctaDone      = ctaTyped >= CTA_TEXT.length;
 
   return (
     <div style={{ backgroundColor: colors.bg, minHeight: '100vh', overflowX: 'hidden', transition: 'background-color 0.3s' }}>
@@ -770,10 +939,10 @@ export function LandingPage() {
           <div style={{ flex: '1 1 500px' }}>
             {/*
               HERO HEADLINE FONT SIZE:
-              clamp(3rem, 8vw, 6.5rem)
+              clamp(3rem, 8vw, 4.5rem)
               — min 48px on small screens
               — fluid scaling with viewport width (8vw)
-              — max 104px on wide displays
+              — max 72px on wide displays
               Change the three values here to adjust headline size.
             */}
             <h1 style={{
@@ -841,8 +1010,7 @@ export function LandingPage() {
               flex: '0 1 400px',
             }}
           >
-            {/*'&lt;div id="app"&gt;'*/}
-            <FloatingChip text="parentNode.children"   top="8%"     left="2%"   rotate={-5} delay="0s"   colors={colors} />
+            <FloatingChip text="parentNode.children"    top="8%"     left="2%"   rotate={-5} delay="0s"   colors={colors} />
             <FloatingChip text="querySelector('#app')"   top="15%"    right="0%"  rotate={4}  delay="0.8s" colors={colors} />
             <FloatingChip text="node.addEventListener"   bottom="20%" left="0%"   rotate={-3} delay="0.4s" colors={colors} />
             <FloatingChip text="parentNode.children"     bottom="8%"  right="2%"  rotate={6}  delay="1.4s" colors={colors} />
@@ -851,7 +1019,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── LIVE DEMO — real embedded, not a screenshot ── */}
+      {/* ── LIVE DEMO — read-only sample data showcase (see section 8 above) ── */}
       <LiveDemoSection colors={colors} />
 
       {/* ── HOW IT WORKS ── */}
@@ -894,6 +1062,29 @@ export function LandingPage() {
               onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = i === 1 ? 'translateY(-12px)' : 'translateY(-4px)'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = i === 1 ? 'translateY(-8px)' : 'none'; }}
             >
+              {/* ── NEW: "Coming Soon" badge — only renders when
+                  card.comingSoon is true (currently just card 03,
+                  "Manipulate with JS"). Positioned top-left so it
+                  doesn't collide with the step number (top-right). */}
+              {card.comingSoon && (
+                <div style={{
+                  position: 'absolute',
+                  top: '16px',
+                  left: '16px',
+                  backgroundColor: '#E84D8A',
+                  color: '#000',
+                  border: '2px solid #000',
+                  padding: '3px 10px',
+                  fontFamily: 'Archivo Black, sans-serif',
+                  fontSize: '0.62rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  boxShadow: '2px 2px 0 #000',
+                }}>
+                  Coming Soon
+                </div>
+              )}
+
               <div style={{
                 fontFamily: 'Archivo Black, sans-serif',
                 fontSize: '3.5rem',
@@ -913,6 +1104,9 @@ export function LandingPage() {
                 backgroundColor: card.color,
                 border: '2.5px solid #000',
                 marginBottom: '20px',
+                // Push icon down slightly on the comingSoon card so
+                // it doesn't sit flush under the new badge above it
+                marginTop: card.comingSoon ? '28px' : '0px',
               }}>{card.icon}</div>
 
               <h3 style={{ fontFamily: 'Archivo Black, sans-serif', fontSize: '1.3rem', color: colors.cream, margin: '0 0 12px', textTransform: 'uppercase' }}>{card.title}</h3>
@@ -922,7 +1116,9 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── LEARNING PATH — centred ── 
+      {/* ── LEARNING PATH — currently disabled (commented out) ──
+          Kept in the file, ready to re-enable once JS Operations
+          (Sprint 4) actually ships and this row means something real.
       <section style={{ padding: '64px 48px', maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 32 }}>
           <div style={{ width: 32, height: 2.5, backgroundColor: colors.amber }} />
@@ -932,7 +1128,6 @@ export function LandingPage() {
           <div style={{ width: 32, height: 2.5, backgroundColor: colors.amber }} />
         </div>
 
-        
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
           {PILLS.map((pill, i) => (
             <PathPill key={pill.label} pill={pill} isLast={i === PILLS.length - 1} />
@@ -943,9 +1138,7 @@ export function LandingPage() {
           You are on <span style={{ color: colors.amber, fontWeight: 600 }}>HTML</span> — the foundation of the DOM. Complete each module to unlock the next.
         </p>
       </section>
-
       */}
-      
 
       {/* ── CTA BANNER ── */}
       <section ref={ctaRef} style={{

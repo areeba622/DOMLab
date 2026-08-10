@@ -1,2 +1,144 @@
 # DOMLab
-Dom visualizer app 
+
+DOMLab is a browser-based DOM visualizer built with React and TypeScript. It helps developers explore nested HTML structures, inspect node details, and see live DOM interactions in an interactive landing page demo.
+
+## What DOMLab Does
+
+- Renders a sample DOM tree in a hierarchical explorer view
+- Synchronizes selected nodes across the DOM tree, inspector panel, and HTML preview
+- Shows a read-only HTML source panel for DOM nodes
+- Provides a clean, modern interface built with Vite and Tailwind CSS
+
+## Project Setup
+
+### Prerequisites
+
+- Node.js 20.x or later
+- npm 10.x or later
+
+### Getting started
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the local dev server URL shown in the terminal to view the app.
+
+### Build for production
+
+```bash
+cd frontend
+npm run build
+```
+
+### Preview the production build
+
+```bash
+cd frontend
+npm run preview
+```
+
+## Tech Stack
+
+- React 19
+- TypeScript 6
+- Vite
+- Tailwind CSS 4
+- Framer Motion
+- React Router DOM
+- ESLint
+
+## Folder Structure
+
+```text
+DOMLab/
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── app/
+│   │   │   └── AppLayout.tsx
+│   │   ├── assets/
+│   │   ├── components/
+│   │   │   ├── canvas/
+│   │   │   │   └── LivePreview.tsx
+│   │   │   ├── console/
+│   │   │   │   ├── Console.tsx
+│   │   │   │   └── console.types.ts
+│   │   │   ├── dom-tree/
+│   │   │   │   ├── DomTree.tsx
+│   │   │   │   ├── DomTreeNode.tsx
+│   │   │   │   ├── DomTreePanel.tsx
+│   │   │   │   └── DomTreeToolbar.tsx
+│   │   │   ├── input/
+│   │   │   │   └── HtmlInputPanel.tsx
+│   │   │   ├── inspector/
+│   │   │   │   ├── Inspector.tsx
+│   │   │   │   └── InspectorField.tsx
+│   │   │   └── layout/
+│   │   │       ├── ComingSoon.tsx
+│   │   │       ├── MobileNav.tsx
+│   │   │       ├── Navbar.tsx
+│   │   │       ├── Panel.tsx
+│   │   │       ├── StatusBar.tsx
+│   │   │       └── ThemeToggle.tsx
+│   │   ├── components.tsx
+│   │   ├── context/
+│   │   │   ├── SelectedNodeContext.tsx
+│   │   │   ├── selection.types.ts
+│   │   │   ├── theme.types.ts
+│   │   │   └── ThemeContext.tsx
+│   │   ├── hooks/
+│   │   │   ├── useDomTree.ts
+│   │   │   ├── useDomTree.types.ts
+│   │   │   ├── useParsedDom.ts
+│   │   │   └── useParsedDom.types.ts
+│   │   ├── lib/
+│   │   │   └── animations.ts
+│   │   ├── pages/
+│   │   │   ├── ExplorerPage.tsx
+│   │   │   └── LandingPage.tsx
+│   │   ├── types/
+│   │   │   └── dom.types.ts
+│   │   ├── utils/
+│   │   │   ├── analyzeDom.ts
+│   │   │   ├── domParser.ts
+│   │   │   └── renderHtml.ts
+│   │   ├── App.css
+│   │   ├── App.tsx
+│   │   ├── index.css
+│   │   └── main.tsx
+│   ├── eslint.config.js
+│   ├── package.json
+│   ├── tailwind.config.ts
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+└── README.md
+```
+
+## Important Notes
+
+- The repository is currently scoped around the `frontend` app.
+- The app is designed for visualizing DOM structure and node selection flows.
+- The live demo section is meant to illustrate DOM node selection, HTML rendering, and inspector sync.
+
+## Coming Soon
+
+- Editable DOM node content and inline HTML editing
+- Save/load DOM tree snapshots
+- More advanced inspector details for node attributes and styles
+- Search, filter, and keyboard navigation for the DOM tree
+- Dark mode and layout customization
+- Export HTML or component structure
+- Deeper integration with external DOM parsing utilities
+
+## Contributing
+
+If you want to contribute improvements, add features, or help polish the UI, open an issue or submit a pull request.
+
+## License
+
+This project is currently unlicensed. Add a license file if you want to share it publicly.
