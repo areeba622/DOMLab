@@ -1,6 +1,6 @@
 # DOMLab
 
-DOMLab is a browser-based DOM visualizer built with React and TypeScript. It helps developers explore nested HTML structures, inspect node details, and see live DOM interactions in an interactive landing page demo.
+DOMLab is a browser-based DOM visualizer built with React and TypeScript .Paste any HTML and DOMLab turns it into an explorable tree, synced live with a real rendered preview — click a node in either view to highlight it in the other. A built-in console flags common HTML issues as you go.
 
 <img width="958" height="473" alt="image" src="https://github.com/user-attachments/assets/e0a24ed7-f974-4bdd-a43e-ee1db8fe4bc3" />
 
@@ -8,8 +8,8 @@ DOMLab is a browser-based DOM visualizer built with React and TypeScript. It hel
 
 - Renders a sample DOM tree in a hierarchical explorer view
 - Synchronizes selected nodes across the DOM tree, inspector panel, and HTML preview
-- Shows a read-only HTML source panel for DOM nodes
-- Provides a clean, modern interface built with Vite and Tailwind CSS
+- Parse Html option where users can bring their own HTML and explore its real DOM structure
+
 
 ## Project Setup
 
@@ -129,19 +129,13 @@ DOMLab/
 
 ## Coming Soon
 
+- JavaScript-driven manipulation
 - Editable DOM node content and inline HTML editing
 - Save/load DOM tree snapshots
 - More advanced inspector details for node attributes and styles
 - Search, filter, and keyboard navigation for the DOM tree
-- Dark mode and layout customization
-- Export HTML or component structure
-- Deeper integration with external DOM parsing utilities
 
-## Contributing
 
-If you want to contribute improvements, add features, or help polish the UI, open an issue or submit a pull request.
-
-## License
 
 ## License
 
