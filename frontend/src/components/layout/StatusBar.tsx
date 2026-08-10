@@ -9,6 +9,12 @@ interface StatusBarProps {
   source: DataSource;
 }
 
+// Shared ticker-segment styling: static by default, thin accent
+// underline appears only on hover — no motion, no layout shift
+// (the transparent border reserves the space up front).
+const tickerSegment =
+  'border-b-2 border-transparent pb-px transition-colors hover:border-accent hover:text-accent';
+
 export function StatusBar({ rootNode, source }: StatusBarProps) {
   const { selectedNodeId } = useSelectedNode();
 
@@ -17,12 +23,14 @@ export function StatusBar({ rootNode, source }: StatusBarProps) {
   const sourceLabel = source === 'sample' ? 'Sample data loaded' : 'Custom HTML loaded';
 
   return (
-    <footer className="flex h-6 items-center justify-between border-t border-border bg-panel px-4">
-      <span className="font-mono text-xs text-muted">
-        {nodeCount} nodes
-        {selectedNode && <> · Selected: &lt;{selectedNode.tagName}&gt;</>}
-      </span>
-      <span className="font-mono text-xs text-muted">{sourceLabel}</span>
+    <footer className="flex h-7 items-center justify-between border-t-[2.5px] border-line bg-panel px-4 font-mono text-xs uppercase tracking-wide text-muted">
+      <div className="flex items-center gap-4">
+        <span className={tickerSegment}>{nodeCount} nodes</span>
+        {selectedNode && (
+          <span className={tickerSegment}>selected: &lt;{selectedNode.tagName}&gt;</span>
+        )}
+      </div>
+      <span className={tickerSegment}>{sourceLabel}</span>
     </footer>
   );
 }

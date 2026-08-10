@@ -14,15 +14,11 @@ export function DomTreePanel({ rootNode }: DomTreePanelProps) {
   const { expandedIds, toggleExpand, expandAll, collapseAll } = useDomTree([rootNode.id]);
 
   return (
-    <Panel
-      title="DOM tree"
-      headerActions={
-        <DomTreeToolbar
-          onExpandAll={() => expandAll(collectAllIds(rootNode))}
-          onCollapseAll={collapseAll}
-        />
-      }
-    >
+    <Panel title="DOM tree">
+      <DomTreeToolbar
+        onExpandAll={() => expandAll(collectAllIds(rootNode))}
+        onCollapseAll={collapseAll}
+      />
       <DomTree rootNode={rootNode} expandedIds={expandedIds} onToggleExpand={toggleExpand} />
     </Panel>
   );

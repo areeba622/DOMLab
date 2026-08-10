@@ -1,12 +1,15 @@
-// src/app/App.tsx
-import { ThemeProvider } from './context/ThemeContext';
-import { AppLayout } from './app/AppLayout.tsx';
+import { Routes, Route } from 'react-router-dom';
+
+import { LandingPage } from './pages/LandingPage.tsx';
+import { ExplorerPage } from './pages/ExplorerPage.tsx';
 
 function App() {
   return (
-    <ThemeProvider>
-      <AppLayout />
-    </ThemeProvider>
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/explorer" element={<ExplorerPage />} />
+      <Route path="*" element={<LandingPage />} />
+    </Routes>
   );
 }
 

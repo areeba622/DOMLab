@@ -1,8 +1,8 @@
 // src/components/inspector/Inspector.tsx  (updated)
 import { useSelectedNode } from '../../context/SelectedNodeContext';
-import { findNodeById } from '../../utils/domParser';
-import { InspectorField } from './InspectorField';
 import type { DomNode } from '../../types/dom.types';
+import { findNodeById, isNonVisualTag, isWholePageTag } from '../../utils/domParser';
+import { InspectorField } from './InspectorField';
 
 interface InspectorProps {
   rootNode: DomNode;
@@ -46,12 +46,33 @@ export function Inspector({ rootNode }: InspectorProps) {
   }
 
   const attributeEntries = Object.entries(node.attributes);
+  const isNonVisual = isNonVisualTag(node.tagName);
+  const isWholePage = isWholePageTag(node.tagName);
 
   return (
     <div className="flex flex-col">
-      <InspectorField label="Tag" value={`<${node.tagName}>`} />
-      <InspectorField label="Depth" value={String(node.depth)} />
+      {isNonVisual && (
+        <div className="mb-2 border-2 border-dashed border-accentSecondary bg-background px-3 py-2">
+          <p className="font-sans text-xs text-muted">
+            ℹ Browsers don't display <span className="font-mono">&lt;{node.tagName}&gt;</span> on
+            the page itself — that's why nothing highlights in the Canvas.
+          </p>
+        </div>
+      )}
 
+      {isWholePage && (
+        <div className="mb-2 border-2 border-dashed border-accentSecondary bg-background px-3 py-2">
+          <p className="font-sans text-xs text-muted">
+            ℹ This wraps the entire page — the highlight outlines all visible content at once,
+            which can look like a thin line at the edges.
+          </p>
+        </div>
+      )}
+
+      {/* accent: links this value visually back to the amber
+          highlight on the selected node in the Tree panel. */}
+      <InspectorField label="Tag" value={`<${node.tagName}>`} accent />
+      <InspectorField label="Depth" value={String(node.depth)} />
       {node.textContent && (
         <InspectorField label="Text content" value={node.textContent} />
       )}
@@ -61,7 +82,7 @@ export function Inspector({ rootNode }: InspectorProps) {
           <InspectorField key={key} label={`Attribute: ${key}`} value={value} />
         ))
       ) : (
-        <InspectorField label="Attributes" value="None" />
+        <InspectorField label="Attributes" value="—" muted />
       )}
     </div>
   );

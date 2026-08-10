@@ -29,13 +29,7 @@ export function DomTreeNode({
         role="treeitem"
         aria-selected={isSelected}
         onClick={() => onSelect(node.id)}
-        style={{ paddingLeft: `${node.depth * 16}px` }}
-        className={[
-          'flex cursor-pointer items-center gap-1 rounded px-2 py-1 font-mono text-sm transition-colors duration-150',
-          isSelected
-            ? 'border-l-2 border-accent bg-accent/10 text-accent'
-            : 'border-l-2 border-transparent text-text hover:bg-accentSecondary/10',
-        ].join(' ')}
+        className="flex cursor-pointer items-center gap-1 py-1 font-mono text-sm text-text transition-colors hover:text-accentSecondary"
       >
         {hasChildren ? (
           <button
@@ -44,8 +38,7 @@ export function DomTreeNode({
               onToggleExpand(node.id);
             }}
             aria-label={isExpanded ? 'Collapse node' : 'Expand node'}
-            /* CHANGED: Updated touch target size for expand/collapse arrow button */
-            className="flex h-6 w-6 items-center justify-center text-muted md:h-4 md:w-4"
+            className="flex h-6 w-6 shrink-0 items-center justify-center text-muted md:h-4 md:w-4"
           >
             <motion.span
               animate={{ rotate: isExpanded ? 90 : 0 }}
@@ -56,10 +49,23 @@ export function DomTreeNode({
             </motion.span>
           </button>
         ) : (
-          <span className="w-4" />
+          <span className="w-4 shrink-0" />
         )}
 
-        <span>&lt;{node.tagName}&gt;</span>
+        {/* Selection highlight is scoped to just the tag token, not
+            the full row — reads as a highlighted terminal token
+            rather than a whole-line selection bar. Text color is
+            fixed dark in both themes since amber stays light enough
+            for dark text to read either way. */}
+        <span
+          className={
+            isSelected
+              ? 'border-2 border-line bg-accent px-1.5 text-[#1B1E27]'
+              : 'px-0.5'
+          }
+        >
+          &lt;{node.tagName}&gt;
+        </span>
       </div>
 
       <AnimatePresence initial={false}>
@@ -71,18 +77,23 @@ export function DomTreeNode({
             transition={{ duration: 0.18, ease: 'easeInOut' }}
             style={{ overflow: 'hidden' }}
           >
-            {node.children.map((child) => (
-              <DomTreeNode
-                key={child.id}
-                node={child}
-                isExpanded={expandedIds.has(child.id)}
-                isSelected={selectedNodeId === child.id}
-                expandedIds={expandedIds}
-                selectedNodeId={selectedNodeId}
-                onToggleExpand={onToggleExpand}
-                onSelect={onSelect}
-              />
-            ))}
+            {/* Dashed connector line — one per nesting level, falls
+                out of the recursion itself rather than being
+                calculated from an absolute depth value. */}
+            <div className="ml-2 border-l border-dashed border-border pl-3">
+              {node.children.map((child) => (
+                <DomTreeNode
+                  key={child.id}
+                  node={child}
+                  isExpanded={expandedIds.has(child.id)}
+                  isSelected={selectedNodeId === child.id}
+                  expandedIds={expandedIds}
+                  selectedNodeId={selectedNodeId}
+                  onToggleExpand={onToggleExpand}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

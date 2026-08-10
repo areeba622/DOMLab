@@ -197,3 +197,25 @@ export function parseHtmlString(html: string): ParseResult {
     },
   };
 }
+
+// src/utils/domParser.ts  (add this near the top, alongside other utilities)
+
+// Elements browsers never render visually on the page itself —
+// either they live in <head> and affect metadata/behavior, not
+// layout, or they're structural-only. Used to give users a heads-up
+// in the Inspector instead of leaving them wondering why nothing
+// highlighted in Canvas.
+const NON_VISUAL_TAGS = new Set([
+  'head', 'title', 'meta', 'link', 'style', 'script', 'base', 'noscript',
+]);
+
+export function isNonVisualTag(tagName: string): boolean {
+  return NON_VISUAL_TAGS.has(tagName);
+}
+
+// Add alongside NON_VISUAL_TAGS
+const WHOLE_PAGE_TAGS = new Set(['html', 'body']);
+
+export function isWholePageTag(tagName: string): boolean {
+  return WHOLE_PAGE_TAGS.has(tagName);
+}

@@ -7,16 +7,16 @@ interface DomTreeToolbarProps {
 
 export function DomTreeToolbar({ onExpandAll, onCollapseAll }: DomTreeToolbarProps) {
   return (
-    <div className="flex gap-2">
+    <div className="mb-3 flex gap-2 border-b border-dashed border-border pb-3">
       <button
         onClick={onExpandAll}
-        className="rounded border border-border px-2 py-1 font-sans text-xs text-muted hover:text-text hover:border-accentSecondary transition-colors"
+        className="border-2 border-line bg-panel px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-muted shadow-[var(--db-shadow-offset-sm)] transition-transform hover:text-accentSecondary active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_0_var(--db-line)]"
       >
         Expand all
       </button>
       <button
         onClick={onCollapseAll}
-        className="rounded border border-border px-2 py-1 font-sans text-xs text-muted hover:text-text hover:border-accentSecondary transition-colors"
+        className="border-2 border-line bg-panel px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-muted shadow-[var(--db-shadow-offset-sm)] transition-transform hover:text-accentSecondary active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_0_var(--db-line)]"
       >
         Collapse all
       </button>
