@@ -2,6 +2,8 @@
 
 DOMLab is a browser-based DOM visualizer built with React and TypeScript. It helps developers explore nested HTML structures, inspect node details, and see live DOM interactions in an interactive landing page demo.
 
+<img width="958" height="473" alt="image" src="https://github.com/user-attachments/assets/e0a24ed7-f974-4bdd-a43e-ee1db8fe4bc3" />
+
 ## What DOMLab Does
 
 - Renders a sample DOM tree in a hierarchical explorer view
@@ -141,4 +143,7 @@ If you want to contribute improvements, add features, or help polish the UI, ope
 
 ## License
 
-This project is currently unlicensed. Add a license file if you want to share it publicly.
+## License
+
+This project is licensed under the [Unlicense](LICENSE) - see the LICENSE.md file for details. This means the code is dedicated to the public domain and you can do whatever you want with it.
+
